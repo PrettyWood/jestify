@@ -1,0 +1,11 @@
+{
+  "name": "jestify",
+  "version": "0.1.0",
+  "description": "Karma → Jest converter for ToucanToco",
+  "main": "jestify.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "dev@toucantoco.com",
+  "license": "ISC"
+}
