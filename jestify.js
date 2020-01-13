@@ -4,10 +4,10 @@
  * USAGE: `node jest-convert.js /path/to/rootDirectory`
  */
 
-const exec = promisify(require('child_process').exec);
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
+const exec = promisify(require('child_process').exec);
 
 require('colors');
 const fg = require('fast-glob');
