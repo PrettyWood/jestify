@@ -4,14 +4,15 @@
  * USAGE: `node jest-convert.js /path/to/rootDirectory`
  */
 
-const simpleGit = require('simple-git/promise');
-const path = require('path');
-const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
 const fs = require('fs');
-const fg = require('fast-glob');
+const path = require('path');
+const { promisify } = require('util');
+
 require('colors');
+const fg = require('fast-glob');
 const nodeReplace = require('replace');
+const simpleGit = require('simple-git/promise');
 
 function log(...args) {
   // eslint-disable-next-line no-console

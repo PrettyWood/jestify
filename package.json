@@ -4,14 +4,24 @@
   "description": "Karma → Jest converter for ToucanToco",
   "main": "jestify.js",
   "scripts": {
+    "lint": "eslint *.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "dev@toucantoco.com",
   "license": "ISC",
   "dependencies": {
+    "colors": "^1.4.0",
     "fast-glob": "^3.1.1",
     "jest-codemods": "^0.22.1",
     "replace": "^1.1.5",
     "simple-git": "^1.129.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-simple-import-sort": "^5.0.0",
+    "prettier": "^1.19.1"
   }
 }
