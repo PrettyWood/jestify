@@ -14,14 +14,29 @@ const fg = require('fast-glob');
 const nodeReplace = require('replace');
 const simpleGit = require('simple-git/promise');
 
+const fsExists = promisify(fs.exists);
+
 function log(...args) {
   // eslint-disable-next-line no-console
   console.log(`[jest-convert]`.magenta, ...args);
 }
 
+async function gitRoot(directory) {
+  let gitRootDirectory = directory;
+  while (!(await fsExists(path.join(gitRootDirectory, '.git')))) {
+    gitRootDirectory = path.dirname(gitRootDirectory);
+    if (gitRootDirectory === '/') {
+      throw new Error('could not find git rootdir');
+    }
+  }
+  return gitRootDirectory;
+}
+
 async function dirtyFiles(git, where) {
+  const gitRootDirectory = await gitRoot(where);
+  const relativePath = where.slice(gitRootDirectory.length + 1);
   const status = await git.status();
-  return status.files.filter((infos) => infos.path.startsWith(where));
+  return status.files.filter((infos) => infos.path.startsWith(relativePath));
 }
 
 async function ensureNoUnstagedChanges(git, where) {
@@ -265,7 +280,8 @@ async function runTransformations(git, rootDirectory) {
 
 async function run(rootDirectory) {
   checkRootDirectory(rootDirectory);
-  const git = simpleGit(__dirname);
+  const gitRootDirectory = await gitRoot(rootDirectory);
+  const git = simpleGit(gitRootDirectory);
   log(`Processing directory ${rootDirectory}`);
   await ensureNoUnstagedChanges(git, rootDirectory);
   await initializeJestFiles(git, rootDirectory);
