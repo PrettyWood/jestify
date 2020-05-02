@@ -97,8 +97,38 @@ async function runTransformations(rootPath) {
   });
 
   advancedReplace({
-    regex: /(sinon|sandbox).stub\((.*?)\).returns\(/g,
-    replacement: 'jest.spyOn($1).mockReturnValue(',
+    regex: /(sinon|sandbox)[\n\s]*.stub\((.*?)\)[\n\s]*.returns\(/g,
+    replacement: 'jest.spyOn($2).mockReturnValue(',
+  });
+
+  advancedReplace({
+    regex: /sinon.stub\(\)/g,
+    replacement: 'jest.fn()',
+  });
+
+  advancedReplace({
+    regex: /(sinon|sandbox)[\n\s]*.stub\((.*?)\)[\n\s]*.returns\(/g,
+    replacement: 'jest.spyOn($2).mockReturnValue(',
+  });
+
+  advancedReplace({
+    regex: /(sinon|sandbox)[\n\s]*.stub\((.*?)\)[\n\s]*.resolves\(/g,
+    replacement: 'jest.spyOn($2).mockResolvedValue(',
+  });
+
+  advancedReplace({
+    regex: /(sinon|sandbox)[\n\s]*.stub\((.*?)\)[\n\s]*.rejects\(/g,
+    replacement: 'jest.spyOn($2).mockRejectedValue(',
+  });
+
+  advancedReplace({
+    regex: /(sinon|sandbox)[\n\s]*.stub\((.*?)\)[\n\s]*.rejects\(/g,
+    replacement: 'jest.spyOn($2).mockRejectedValue(',
+  });
+
+  advancedReplace({
+    regex: /import sinon from 'sinon';/,
+    replacement: '',
   });
 
   // .to.be.a and .to.be.an
@@ -142,6 +172,7 @@ async function runTransformations(rootPath) {
   await replace('.called).to.be.false', ').not.toHaveBeenCalled()');
   await replace('.called).to.eq(true)', ').toHaveBeenCalled()');
   await replace('.called).to.eq(false)', ').not.toHaveBeenCalled()');
+  await replace('.have.be.calledWith(', '.toHaveBeenCalledWith(');
 
   await replace('.to.eq(', '.toStrictEqual(');
   await replace('.to.not.eq(', '.not.toStrictEqual(');
@@ -207,6 +238,8 @@ async function runTransformations(rootPath) {
   // remaining .been.called\\n
   await replace('.to.have.been.called', '.toHaveBeenCalled()');
   await replace('.to.not.have.been.called', '.not.toHaveBeenCalled()');
+  await replace('.have.been.calledWith(', '.toHaveBeenCalledWith(');
+  await replace('.have.been.called', '.toHaveBeenCalled()');
 
   // stub
   await replace('sinon.stub', 'jest.spyOn');
@@ -228,6 +261,8 @@ async function runTransformations(rootPath) {
   await replace(`expect.any('array')`, `expect.any(Array)`);
   await replace(`expect.any('object')`, `expect.any(Object)`);
   await replace(`expect.any('string')`, `expect.any(String)`);
+
+  await replace('.toEqual(', '.toStrictEqual(');
 }
 
 async function run(rootPath) {
