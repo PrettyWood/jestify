@@ -1,7 +1,7 @@
 /**
  * Jest Conversion script, adapted from https://gist.github.com/apiv/02b0b5b70bd752304bc8c7e940a5ea29
  *
- * USAGE: `node jest-convert.js /path/to/rootDirectory`
+ * USAGE: `node jest-convert.js /path/to/rootPath`
  */
 
 const fs = require('fs');
@@ -12,122 +12,71 @@ const exec = promisify(require('child_process').exec);
 require('colors');
 const fg = require('fast-glob');
 const nodeReplace = require('replace');
-const simpleGit = require('simple-git/promise');
-
-const fsExists = promisify(fs.exists);
 
 function log(...args) {
   // eslint-disable-next-line no-console
   console.log(`[jest-convert]`.magenta, ...args);
 }
 
-async function gitRoot(directory) {
-  let gitRootDirectory = directory;
-  while (!(await fsExists(path.join(gitRootDirectory, '.git')))) {
-    gitRootDirectory = path.dirname(gitRootDirectory);
-    if (gitRootDirectory === '/') {
-      throw new Error('could not find git rootdir');
-    }
-  }
-  return gitRootDirectory;
-}
-
-async function dirtyFiles(git, where) {
-  const gitRootDirectory = await gitRoot(where);
-  const relativePath = where.slice(gitRootDirectory.length + 1);
-  const status = await git.status();
-  return status.files.filter((infos) => infos.path.startsWith(relativePath));
-}
-
-async function ensureNoUnstagedChanges(git, where) {
-  const files = await dirtyFiles(git, where);
-  if (files.length) {
-    log('Cannot run when there are unstaged git changes');
+function checkRootPath(rootPath) {
+  if (!fs.existsSync(rootPath)) {
+    log(rootPath.green, 'does not exist');
     process.exit(1);
   }
 }
 
-async function commitDirty(git, where, message) {
-  if ((await dirtyFiles(git, where)).length) {
-    await git.add(where);
-    await git.commit(message, [], { '--no-verify': undefined });
-  }
+function isFile(path) {
+  return /.specs?.js$/.test(path);
 }
 
-function checkRootDirectory(rootDirectory) {
-  if (!fs.existsSync(rootDirectory)) {
-    log('Directory', rootDirectory.green, 'does not exist');
-    process.exit(1);
-  }
-}
-
-async function* collectTestFiles(rootDirectory) {
-  const patterns = /.specs?.js$/.test(rootDirectory)
-    ? [rootDirectory]
-    : ['**/*spec.js', '**/*specs.js'].map((p) => path.join(rootDirectory, p));
+async function* collectTestFiles(rootPath) {
+  const patterns = isFile(rootPath)
+    ? [rootPath]
+    : ['**/*spec.js', '**/*specs.js'].map((p) => path.join(rootPath, p));
   for await (const filepath of fg.stream(patterns)) {
     log(`Found ${filepath}`);
     yield filepath;
   }
 }
 
-async function initializeJestFiles(git, rootDirectory) {
-  log(`Initializing jest files in ${rootDirectory}`);
-  for await (const karmaFilePath of collectTestFiles(rootDirectory)) {
+async function initializeJestFiles(rootPath) {
+  log(`Initializing jest files in ${rootPath}`);
+  for await (const karmaFilePath of collectTestFiles(rootPath)) {
     const jestFilePath = karmaFilePath.replace(/specs?\.js$/, 'test.js');
+    log(`Copying file ${karmaFilePath} to ${jestFilePath}`);
     await promisify(fs.copyFile)(karmaFilePath, jestFilePath);
-    await git.add(jestFilePath);
   }
-  await git.commit(`jestify :: added jest files in ${rootDirectory}`);
 }
 
-async function prettier(git, rootDirectory) {
-  const newFiles = /.specs?.js/.test(rootDirectory)
-    ? rootDirectory.replace(/.specs?.js$/, '.test.js')
-    : `${rootDirectory}/**/*test.js`;
-  await exec(`./node_modules/.bin/prettier --write ${newFiles}`);
-  await commitDirty(git, rootDirectory, `jestify :: prettier on ${rootDirectory}`);
+async function prettier(jestFiles) {
+  await exec(`./node_modules/.bin/prettier --write ${jestFiles}`);
 }
 
-async function transformJestFile(git, rootDirectory) {
+async function transformJestFile(jestFiles) {
   log(`[jest-codemod]`.blue, 'mocha');
   await exec(
-    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/mocha.js ${rootDirectory}`,
+    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/mocha.js ${jestFiles}`,
   );
-
-  await commitDirty(git, rootDirectory, `jestify :: jest-codemods / mocha on ${rootDirectory}`);
 
   log(`[jest-codemod]`.blue, 'chai-assert');
   await exec(
-    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/chai-assert.js ${rootDirectory}`,
+    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/chai-assert.js ${jestFiles}`,
   );
 
-  await commitDirty(
-    git,
-    rootDirectory,
-    `jestify :: jest-codemods / chai-asssert on ${rootDirectory}`,
-  );
   log(`[jest-codemod]`.blue, 'chai-should');
   await exec(
-    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/chai-should.js ${rootDirectory}`,
+    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/chai-should.js ${jestFiles}`,
   );
 
-  await commitDirty(
-    git,
-    rootDirectory,
-    `jestify :: jest-codemods / chai-should on ${rootDirectory}`,
-  );
   log(`[jest-codemod]`.blue, 'expect');
   await exec(
-    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/expect.js ${rootDirectory}`,
+    `./node_modules/.bin/jscodeshift -t ./node_modules/jest-codemods/dist/transformers/expect.js ${jestFiles}`,
   );
-
-  await commitDirty(git, rootDirectory, `jestify :: jest-codemods / expect on ${rootDirectory}`);
 }
 
-async function runTransformations(git, rootDirectory) {
+async function runTransformations(rootPath) {
   async function replace(from, to) {
-    const command = `find ${rootDirectory} -name "*.test.js" -exec sed -i '' 's/${from}/${to}/g' {} \\;`;
+    const command = `find ${rootPath} -name "*.test.js" -exec sed -i '' 's/${from}/${to}/g' {} \\;`;
     log(`[replace]`.yellow, from, '->'.bold, to);
     await exec(command);
   }
@@ -135,7 +84,7 @@ async function runTransformations(git, rootDirectory) {
   function advancedReplace(options) {
     nodeReplace({
       recursive: true,
-      paths: [rootDirectory],
+      paths: [rootPath],
       include: '*.test.js',
       ...options,
     });
@@ -279,20 +228,20 @@ async function runTransformations(git, rootDirectory) {
   await replace(`expect.any('array')`, `expect.any(Array)`);
   await replace(`expect.any('object')`, `expect.any(Object)`);
   await replace(`expect.any('string')`, `expect.any(String)`);
-
-  await commitDirty(git, rootDirectory, `jestify :: replace assertions in ${rootDirectory}`);
 }
 
-async function run(rootDirectory) {
-  checkRootDirectory(rootDirectory);
-  const gitRootDirectory = await gitRoot(rootDirectory);
-  const git = simpleGit(gitRootDirectory);
-  log(`Processing directory ${rootDirectory}`);
-  await ensureNoUnstagedChanges(git, rootDirectory);
-  await initializeJestFiles(git, rootDirectory);
-  await transformJestFile(git, rootDirectory);
-  await runTransformations(git, rootDirectory);
-  await prettier(git, rootDirectory);
+async function run(rootPath) {
+  checkRootPath(rootPath);
+  const type = isFile(rootPath) ? 'file' : 'directory';
+  log(`Processing ${type} ${rootPath}`);
+  await initializeJestFiles(rootPath);
+
+  const jestFiles = /.specs?.js/.test(rootPath)
+    ? rootPath.replace(/.specs?.js$/, '.test.js')
+    : `${rootPath}/**/*test.js`;
+  await transformJestFile(jestFiles);
+  await runTransformations(jestFiles);
+  await prettier(jestFiles);
 }
 
 if (process.argv.length !== 3) {
