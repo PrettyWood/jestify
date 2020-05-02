@@ -144,7 +144,7 @@ async function runTransformations(git, rootDirectory) {
   // quick fix for a jest-codemod conversion that wasn't quite right
   advancedReplace({
     regex: /expect\(typeof (.*?)\)\.toBe\((.*?)\)/g,
-    replacement: 'expect($1).toEqual(expect.any($2))',
+    replacement: 'expect($1).toStrictEqual(expect.any($2))',
   });
 
   advancedReplace({
@@ -155,7 +155,7 @@ async function runTransformations(git, rootDirectory) {
   // .to.be.a and .to.be.an
   advancedReplace({
     regex: /\.to((\.not)?)\.be\.(a|an)\((.*?)\)/g,
-    replacement: '$1.toEqual(expect.any($2))',
+    replacement: '$1.toStrictEqual(expect.any($2))',
   });
 
   // .to.have.length
@@ -194,8 +194,8 @@ async function runTransformations(git, rootDirectory) {
   await replace('.called).to.eq(true)', ').toHaveBeenCalled()');
   await replace('.called).to.eq(false)', ').not.toHaveBeenCalled()');
 
-  await replace('.to.eq(', '.toEqual(');
-  await replace('.to.not.eq(', '.not.toEqual(');
+  await replace('.to.eq(', '.toStrictEqual(');
+  await replace('.to.not.eq(', '.not.toStrictEqual(');
   await replace('.to.eql(', '.toMatchObject(');
   await replace('.to.not.eql(', '.not.toMatchObject(');
 
@@ -218,16 +218,16 @@ async function runTransformations(git, rootDirectory) {
   await replace('.to.not.be.defined', '.not.toBeDefined()');
 
   // .to.be.null
-  await replace('.to.be.null', '.toBeNull()');
-  await replace('.to.not.be.null', '.not.toBeNull()');
+  await replace('.to.be.null', '.toBe(null)');
+  await replace('.to.not.be.null', '.not.toBe(null)');
 
   // .to.be.true
-  await replace('.to.be.true', '.toBeTruthy()');
-  await replace('.to.not.be.true', '.not.toBeTruthy()');
+  await replace('.to.be.true', '.toBe(true)');
+  await replace('.to.not.be.true', '.not.toBe(true)');
 
   // .to.be.false
-  await replace('.to.be.false', '.not.toBeTruthy()');
-  await replace('.to.not.be.false', '.toBeTruthy()');
+  await replace('.to.be.false', '.toBe(false)');
+  await replace('.to.not.be.false', '.not.toBe(false)');
 
   // .to.have.been.called*
   await replace('.to.have.been.calledOnce', '.toHaveBeenCalledTimes(1)');
