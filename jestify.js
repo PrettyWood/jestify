@@ -62,7 +62,9 @@ function checkRootDirectory(rootDirectory) {
 }
 
 async function* collectTestFiles(rootDirectory) {
-  const patterns = ['**/*spec.js', '**/*specs.js'].map((p) => path.join(rootDirectory, p));
+  const patterns = /.specs?.js$/.test(rootDirectory)
+    ? [rootDirectory]
+    : ['**/*spec.js', '**/*specs.js'].map((p) => path.join(rootDirectory, p));
   for await (const filepath of fg.stream(patterns)) {
     log(`Found ${filepath}`);
     yield filepath;
@@ -80,7 +82,10 @@ async function initializeJestFiles(git, rootDirectory) {
 }
 
 async function prettier(git, rootDirectory) {
-  await exec(`./node_modules/.bin/prettier --write ${rootDirectory}/**/*test.js`);
+  const newFiles = /.specs?.js/.test(rootDirectory)
+    ? rootDirectory.replace(/.specs?.js$/, '.test.js')
+    : `${rootDirectory}/**/*test.js`;
+  await exec(`./node_modules/.bin/prettier --write ${newFiles}`);
   await commitDirty(git, rootDirectory, `jestify :: prettier on ${rootDirectory}`);
 }
 
