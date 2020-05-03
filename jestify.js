@@ -175,6 +175,16 @@ async function runTransformations(rootPath) {
     replacement: 'expect($1.text()).toContain($2)',
   });
 
+  advancedReplace({
+    regex: /.toEqual\([\n\s]*expect.arrayContaining\(\[(.*)\]\),?[\n\s]*\)/g,
+    replacement: '.toContain($1)',
+  });
+
+  advancedReplace({
+    regex: /.toEqual\([\n\s]*expect.not.arrayContaining\(\[(.*)\]\),?[\n\s]*\)/g,
+    replacement: '.not.toContain($1)',
+  });
+
   await replace('sinon.spy', 'jest.fn');
   await replace('sandbox.spy', 'jest.fn');
 
@@ -182,6 +192,8 @@ async function runTransformations(rootPath) {
   await replace('sandbox, ', '');
   await replace(', sandbox', '');
   await replace(', sandbox, ', ',');
+
+  await replace('.returns(', '.mockReturnValue(');
 
   // mock has been called
   await replace('.called).to.be.false', ').not.toHaveBeenCalled()');
@@ -225,6 +237,7 @@ async function runTransformations(rootPath) {
   await replace('.to.not.be.false', '.not.toBe(false)');
 
   // .to.have.been.called*
+  await replace('.have.been.calledOnce;', '.toHaveBeenCalledTimes(1);');
   await replace('.to.have.been.calledOnce;', '.toHaveBeenCalledTimes(1);');
   await replace('.to.have.been.called.exactly(', '.toHaveBeenCalledTimes(');
 
@@ -232,8 +245,12 @@ async function runTransformations(rootPath) {
   await replace('.to.have.beenCalledOnce(', '.toHaveBeenCalledTimes(1)');
 
   await replace('.to.have.been.calledWith(', '.toHaveBeenCalledWith(');
+  await replace('.have.been.calledWith(', '.toHaveBeenCalledWith(');
+  await replace('.have.been.calledOnceWith(', '.toHaveBeenCalledWith(');
   await replace('.to.have.been.calledWithMatch(', '.toHaveBeenCalledWith(');
   await replace('.to.have.been.calledWithExactly(', '.toHaveBeenCalledWith(');
+  await replace('.have.been.calledWithExactly(', '.toHaveBeenCalledWith(');
+  await replace('.have.been.calledOnceWithExactly(', '.toHaveBeenCalledWith(');
 
   await replace('.to.have.been.called.once;', '.toHaveBeenCalledTimes(1);');
   await replace('.to.have.been.calledTwice;', '.toHaveBeenCalledTimes(2);');
