@@ -3,7 +3,7 @@
 ## INSTALL
 
 ```
-git clone https://framagit.org/adimascio/jestify
+git clone https://github.com/PrettyWood/jestify.git
 cd jestify
 npm install
 ```
@@ -11,6 +11,6 @@ npm install
 ## USAGE
 
 ```
-node jestify.js /path/to/root/dir/to/convert
+node jestify.js /path/to/root/dir/or/file/to/convert
 ```
 
