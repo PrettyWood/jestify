@@ -102,8 +102,13 @@ async function runTransformations(rootPath) {
   });
 
   advancedReplace({
-    regex: /sinon.stub\(\)/g,
+    regex: /sinon.(stub|spy)\(\)/g,
     replacement: 'jest.fn()',
+  });
+
+  advancedReplace({
+    regex: /sinon[\n\s]*.stub\((.+?)\);/g,
+    replacement: 'jest.spyOn($1).mockImplementation()',
   });
 
   advancedReplace({
@@ -124,6 +129,11 @@ async function runTransformations(rootPath) {
   advancedReplace({
     regex: /(sinon|sandbox)[\n\s]*.stub\((.*?)\)[\n\s]*.rejects\(/g,
     replacement: 'jest.spyOn($2).mockRejectedValue(',
+  });
+
+  advancedReplace({
+    regex: /(sinon|sandbox)[\n\s]*.stub\((.*?)\)[\n\s]*.callsFake\(([\D\d]*)\);/g,
+    replacement: 'jest.spyOn($2).mockImplementation($3);',
   });
 
   advancedReplace({
