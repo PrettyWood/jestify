@@ -107,8 +107,13 @@ async function runTransformations(rootPath) {
   });
 
   advancedReplace({
+    regex: /sinon[\n\s]*.spy\((.+?)\);/g,
+    replacement: 'jest.spyOn($1);',
+  });
+
+  advancedReplace({
     regex: /sinon[\n\s]*.stub\((.+?)\);/g,
-    replacement: 'jest.spyOn($1).mockImplementation()',
+    replacement: 'jest.spyOn($1).mockImplementation();',
   });
 
   advancedReplace({
@@ -220,25 +225,25 @@ async function runTransformations(rootPath) {
   await replace('.to.not.be.false', '.not.toBe(false)');
 
   // .to.have.been.called*
-  await replace('.to.have.been.calledOnce', '.toHaveBeenCalledTimes(1)');
+  await replace('.to.have.been.calledOnce;', '.toHaveBeenCalledTimes(1);');
   await replace('.to.have.been.called.exactly(', '.toHaveBeenCalledTimes(');
 
-  await replace('.to.have.beenCalled', '.toHaveBeenCalled()');
+  await replace('.to.have.beenCalled;', '.toHaveBeenCalled();');
   await replace('.to.have.beenCalledOnce(', '.toHaveBeenCalledTimes(1)');
 
   await replace('.to.have.been.calledWith(', '.toHaveBeenCalledWith(');
   await replace('.to.have.been.calledWithMatch(', '.toHaveBeenCalledWith(');
   await replace('.to.have.been.calledWithExactly(', '.toHaveBeenCalledWith(');
 
-  await replace('.to.have.been.called.once', '.toHaveBeenCalledTimes(1)');
-  await replace('.to.have.been.calledTwice', '.toHaveBeenCalledTimes(2)');
-  await replace('.to.have.been.called.twice', '.toHaveBeenCalledTimes(2)');
+  await replace('.to.have.been.called.once;', '.toHaveBeenCalledTimes(1);');
+  await replace('.to.have.been.calledTwice;', '.toHaveBeenCalledTimes(2);');
+  await replace('.to.have.been.called.twice;', '.toHaveBeenCalledTimes(2);');
 
   // .to.not.have.been.called*
-  await replace('.to.not.have.been.calledOnce', '.not.toHaveBeenCalledTimes(1)');
+  await replace('.to.not.have.been.calledOnce;', '.not.toHaveBeenCalledTimes(1);');
   await replace('.to.not.have.been.called.exactly(', '.not.toHaveBeenCalledTimes(');
 
-  await replace('.to.not.have.beenCalled', '.not.toHaveBeenCalled()');
+  await replace('.to.not.have.beenCalled;', '.not.toHaveBeenCalled();');
   await replace('.to.not.have.beenCalledOnce(', '.not.toHaveBeenCalledTimes(1)');
 
   await replace('.to.not.have.been.calledWith(', '.not.toHaveBeenCalledWith(');
@@ -246,10 +251,10 @@ async function runTransformations(rootPath) {
   await replace('.to.not.have.been.calledWithExactly(', '.not.toHaveBeenCalledWith(');
 
   // remaining .been.called\\n
-  await replace('.to.have.been.called', '.toHaveBeenCalled()');
-  await replace('.to.not.have.been.called', '.not.toHaveBeenCalled()');
+  await replace('.to.have.been.called;', '.toHaveBeenCalled();');
+  await replace('.to.not.have.been.called;', '.not.toHaveBeenCalled();');
   await replace('.have.been.calledWith(', '.toHaveBeenCalledWith(');
-  await replace('.have.been.called', '.toHaveBeenCalled()');
+  await replace('.have.been.called;', '.toHaveBeenCalled();');
 
   // stub
   await replace('sinon.stub', 'jest.spyOn');
