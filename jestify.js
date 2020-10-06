@@ -185,6 +185,11 @@ async function runTransformations(rootPath) {
     replacement: '.not.toContain($1)',
   });
 
+  advancedReplace({
+    regex: /\bthis\./g,
+    replacement: 'testContext.'
+  })
+
   await replace('sinon.spy', 'jest.fn');
   await replace('sandbox.spy', 'jest.fn');
 
